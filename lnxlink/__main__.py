@@ -2,6 +2,7 @@
 """Start the LNXlink service"""
 
 import os
+import re
 import sys
 import time
 import json
@@ -122,7 +123,7 @@ class LNXlink:
         self.prev_publish[topic] = pub_data
         self.saved_publish[subtopic.replace("/", "_")] = pub_data
         self.client.publish(
-            topic, payload=pub_data, retain=self.config["mqtt"]["lwt"]["retain"]
+            sanitize_topic(topic), payload=pub_data, retain=self.config["mqtt"]["lwt"]["retain"]
         )
 
     def run_module(self, name, method):
@@ -248,7 +249,7 @@ class LNXlink:
         client.subscribe(f"{self.pref_topic}/commands/#")
         if self.config["mqtt"]["lwt"]["enabled"]:
             self.client.publish(
-                f"{self.pref_topic}/lwt",
+                sanitize_topic(f"{self.pref_topic}/lwt"),
                 payload="ON",
                 qos=self.config["mqtt"]["lwt"]["qos"],
                 retain=True,
@@ -268,7 +269,7 @@ class LNXlink:
         logger.info("Disconnected from MQTT.")
         if self.config["mqtt"]["lwt"]["enabled"]:
             self.client.publish(
-                f"{self.pref_topic}/lwt",
+                sanitize_topic(f"{self.pref_topic}/lwt"),
                 payload="OFF",
                 qos=self.config["mqtt"]["lwt"]["qos"],
                 retain=True,
@@ -293,7 +294,7 @@ class LNXlink:
             if status:
                 logger.info("Power Down detected.")
                 self.client.publish(
-                    f"{self.pref_topic}/lwt",
+                    sanitize_topic(f"{self.pref_topic}/lwt"),
                     payload="OFF",
                     qos=self.config["mqtt"]["lwt"]["qos"],
                     retain=True,
@@ -301,7 +302,7 @@ class LNXlink:
                 for topic, message in self.prev_publish.items():
                     message = self.replace_values_with_none(message)
                     self.client.publish(
-                        topic,
+                        sanitize_topic(topic),
                         payload=message,
                     )
             else:
@@ -310,7 +311,7 @@ class LNXlink:
                     self.kill = False
                     self.monitor_run_thread()
                 self.client.publish(
-                    f"{self.pref_topic}/lwt",
+                    sanitize_topic(f"{self.pref_topic}/lwt"),
                     payload="ON",
                     qos=self.config["mqtt"]["lwt"]["qos"],
                     retain=True,
@@ -338,7 +339,7 @@ class LNXlink:
                         result_topic = (
                             f"{self.pref_topic}/command_result/{topic.strip('/')}"
                         )
-                        self.client.publish(result_topic, payload=result, retain=False)
+                        self.client.publish(sanitize_topic(result_topic), payload=result, retain=False)
                 except Exception as err:
                     logger.error(
                         "Couldn't run command for module %s: %s, %s",
@@ -482,7 +483,7 @@ class LNXlink:
             del discovery["json_attributes_topic"]
             del discovery["json_attributes_template"]
         self.client.publish(
-            f"homeassistant/{options['type']}/lnxlink/{discovery['unique_id']}/config",
+            sanitize_topic(f"homeassistant/{options['type']}/lnxlink/{discovery['unique_id']}/config"),
             payload=json.dumps(discovery),
             retain=True,
         )
@@ -511,6 +512,9 @@ class LNXlink:
         logger.info("Restarting LNXlink...")
         os.execv(sys.executable, ["python"] + sys.argv)
 
+
+def sanitize_topic(topic):
+    return re.sub(r'[^a-zA-Z0-9_/\-]+', '', topic)
 
 def setup_logger(config_path, log_level):
     """Save logs on the same directory as the config file"""
