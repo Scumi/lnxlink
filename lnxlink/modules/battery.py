@@ -48,6 +48,15 @@ class Addon:
 
     def _get_devices(self):
         devices = {}
+        UPowerStates = {
+            0: "unknown",
+            1: "charging",
+            2: "discharging",
+            3: "empty",
+            4: "fully charged",
+            5: "pending charge",
+            6: "pending discharge",
+        }
         for device in self.get_batteries():
             native_path = device["NativePath"].split("/")[-1]
             name = " ".join(
@@ -68,6 +77,7 @@ class Addon:
                         "serial": device["Serial"],
                         "native_path": native_path,
                         "rechargeable": device["IsRechargeable"],
+                        "status": UPowerStates[device["State"]],
                     },
                 }
         return devices
@@ -113,6 +123,7 @@ class Addon:
                             "IconName": proxy.IconName,
                             "IsRechargeable": proxy.IsRechargeable,
                             "Vendor": proxy.Vendor,
+                            "State": proxy.State,
                         }
                     )
         return batteries
