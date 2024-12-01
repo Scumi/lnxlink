@@ -55,7 +55,7 @@ class Addon:
                     [
                         device["Vendor"],
                         device["Model"],
-                        device["Serial"].replace(":", ""),
+                        device["Serial"]
                     ]
                 )
                 .strip()
