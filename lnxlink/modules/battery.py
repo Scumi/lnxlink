@@ -82,6 +82,8 @@ class Addon:
                         "native_path": native_path,
                         "rechargeable": device["IsRechargeable"],
                         "status": UPowerStates[device["State"]],
+                        "time_to_empty": device["TimeToEmpty"],
+                        "time_to_full": device["TimeToFull"],
                     },
                 }
         return devices
@@ -128,6 +130,8 @@ class Addon:
                             "IsRechargeable": proxy.IsRechargeable,
                             "Vendor": proxy.Vendor,
                             "State": proxy.State,
+                            "TimeToEmpty": proxy.TimeToEmpty,
+                            "TimeToFull": proxy.TimeToFull,
                         }
                     )
         return batteries
